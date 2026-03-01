@@ -46,7 +46,7 @@ Si la question concerne un prix, une alternative ou une comparaison, réponds de
 
     const chatResponse = await withTimeout(
       mistralClient.chat.complete({
-        model: 'mistral-small-latest', // ou 'mistral-large-latest'
+        model: 'mistral-small-latest',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: query }
@@ -54,7 +54,15 @@ Si la question concerne un prix, une alternative ou une comparaison, réponds de
       }),
       50000
     )
-    return chatResponse.choices[0]?.message?.content ?? ''
+    const content = chatResponse.choices[0]?.message?.content
+    if (typeof content === 'string') {
+      return content
+    }
+    if (Array.isArray(content)) {
+      // Si c'est un tableau de ContentChunk, on concatène les textes
+      return content.map(chunk => chunk.text || '').join('')
+    }
+    return ''
   } catch (error) {
     console.error('Erreur Mistral:', error)
     throw error
