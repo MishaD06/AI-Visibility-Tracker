@@ -85,16 +85,16 @@ export async function POST(request: Request) {
     // 7. Sauvegarde
     console.log('💾 [API] Sauvegarde en base...')
     const search = await prisma.search.create({
-      data: {
-        domain,
-        sector,
-        rawResults,
-        mentions,
-        competitors,
-        recommendations,
-        visibilityScore,
-      },
-    })
+  data: {
+    domain,
+    sector,
+    rawResults,
+    mentions: mentions as any,
+    competitors: competitors as any,
+    recommendations: recommendations as any,
+    visibilityScore,
+  },
+})
     console.log('✅ [API] Analyse terminée, ID:', search.id)
 
     return NextResponse.json({ id: search.id })
