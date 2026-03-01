@@ -12,7 +12,7 @@ export default async function HistoryPage() {
       <h1 className="text-3xl font-bold mb-6">Historique des analyses</h1>
       <div className="bg-white shadow overflow-hidden sm:rounded-md">
         <ul className="divide-y divide-gray-200">
-          {searches.map((search) => (
+          {searches.map((search: any) => (
             <li key={search.id}>
               <Link href={`/results/${search.id}`} className="block hover:bg-gray-50">
                 <div className="px-4 py-4 sm:px-6">
