@@ -59,8 +59,22 @@ Si la question concerne un prix, une alternative ou une comparaison, réponds de
       return content
     }
     if (Array.isArray(content)) {
-      // Si c'est un tableau de ContentChunk, on concatène les textes
-      return content.map(chunk => chunk.text || '').join('')
+      // Gestion robuste des différents formats de chunks
+      return content.map(chunk => {
+        if (chunk && typeof chunk === 'object') {
+          // Essayer différentes propriétés possibles
+          if ('text' in chunk) return String(chunk.text)
+          if ('content' in chunk) return String(chunk.content)
+          if ('value' in chunk) return String(chunk.value)
+        }
+        if (typeof chunk === 'string') return chunk
+        // Fallback
+        try {
+          return JSON.stringify(chunk)
+        } catch {
+          return ''
+        }
+      }).join('')
     }
     return ''
   } catch (error) {
