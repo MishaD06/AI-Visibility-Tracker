@@ -1,10 +1,9 @@
 generator client {
   provider = "prisma-client-js"
-  // ou "prisma-client" si tu veux utiliser le nouveau générateur ESM
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 model Search {

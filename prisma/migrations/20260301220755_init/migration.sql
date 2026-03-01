@@ -1,12 +1,14 @@
 -- CreateTable
 CREATE TABLE "Search" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "domain" TEXT NOT NULL,
     "sector" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "rawResults" JSONB NOT NULL,
     "mentions" JSONB NOT NULL,
     "competitors" JSONB NOT NULL,
     "recommendations" JSONB NOT NULL,
-    "visibilityScore" INTEGER
+    "visibilityScore" INTEGER,
+
+    CONSTRAINT "Search_pkey" PRIMARY KEY ("id")
 );
