@@ -7,7 +7,6 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-// Vérifie que DATABASE_URL est définie
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL is not defined')
 }
