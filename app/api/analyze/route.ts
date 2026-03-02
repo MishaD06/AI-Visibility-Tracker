@@ -89,16 +89,16 @@ export async function POST(request: Request) {
     const visibilityScore = calculateVisibilityScore(mentions, domain)
     console.log('📊 [API] Score de visibilité:', visibilityScore)
 
-    // 7. Sauvegarde
+    // 7. Sauvegarde (avec casts pour éviter les erreurs TypeScript)
     console.log('💾 [API] Sauvegarde en base...')
     const search = await prisma.search.create({
       data: {
         domain,
         sector,
-        rawResults,
-        mentions,
-        competitors,
-        recommendations,
+        rawResults: rawResults as any,
+        mentions: mentions as any,
+        competitors: competitors as any,
+        recommendations: recommendations as any,
         visibilityScore,
       },
     })
