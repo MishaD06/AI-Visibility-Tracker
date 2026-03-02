@@ -1,7 +1,11 @@
 // lib/analyzers/queries.ts
 
-// Dictionnaire des requêtes par secteur
-const sectorQueryMap: Record<string, string[]> = {
+type SectorQueries = {
+  [key: string]: string[]; // clé : secteur (en minuscules, sans accents)
+};
+
+// Dictionnaire de requêtes par secteur (version enrichie et équilibrée)
+const sectorQueryMap: SectorQueries = {
   "école d'ingénieurs": [
     "meilleures écoles d'ingénieurs en France",
     "classement des écoles d'ingénieurs",
@@ -319,7 +323,7 @@ const sectorQueryMap: Record<string, string[]> = {
   ]
 };
 
-// Requêtes par défaut pour les secteurs non répertoriés
+// Requêtes génériques pour les secteurs non listés
 const defaultQueries = [
   "meilleurs {sector}",
   "avis sur {domain}",
@@ -330,52 +334,62 @@ const defaultQueries = [
   "qualité {domain}"
 ];
 
-// Nettoie une chaîne pour la comparaison
-function normalize(s: string): string {
-  return s
+/**
+ * Nettoie une chaîne pour faciliter la correspondance (supprime accents, points, etc.)
+ */
+function normalizeSector(sector: string): string {
+  return sector
     .toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^\w\s]/g, ' ')
-    .replace(/\s+/g, ' ')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // enlève accents
+    .replace(/[^\w\s]/g, ' ') // remplace ponctuation par espace
+    .replace(/\s+/g, ' ')     // réduit espaces multiples
     .trim();
 }
 
-// Trouve la meilleure correspondance entre le secteur détecté et les clés du mapping
-function findBestMatch(sector: string): string | undefined {
-  const normalizedSector = normalize(sector);
-  
+/**
+ * Trouve la clé la plus proche dans le mapping (correspondance approximative)
+ */
+function findBestMatch(normalizedSector: string): string | undefined {
   // Correspondance exacte
   if (sectorQueryMap[normalizedSector]) return normalizedSector;
-  
-  // Recherche par mots-clés (mots de plus de 3 lettres)
-  const words = normalizedSector.split(' ').filter(w => w.length > 3);
+
+  // Cherche une clé contenant le mot-clé principal (premier mot significatif)
+  const words = normalizedSector.split(/\s+/).filter(w => w.length > 3);
   for (const word of words) {
     for (const key of Object.keys(sectorQueryMap)) {
-      if (key.includes(word)) return key;
+      if (key.includes(word)) {
+        return key;
+      }
     }
   }
-  
-  // Recherche par inclusion mutuelle
+
+  // Cherche une clé qui contient la chaîne entière (ex: "formation professionnelle" dans "formation")
   for (const key of Object.keys(sectorQueryMap)) {
-    if (normalizedSector.includes(key) || key.includes(normalizedSector)) return key;
+    if (normalizedSector.includes(key) || key.includes(normalizedSector)) {
+      return key;
+    }
   }
-  
+
   return undefined;
 }
 
 export function generateQueries(sector: string, domain: string): string[] {
-  const bestKey = findBestMatch(sector);
-  let queries: string[];
+  const normalized = normalizeSector(sector);
+  const bestKey = findBestMatch(normalized);
   
+  let queries: string[];
   if (bestKey) {
     queries = sectorQueryMap[bestKey];
   } else {
     queries = defaultQueries;
   }
-  
-  // Remplacer les variables
-  return queries.map(q => q
+
+  // Remplacer les variables {domain} et {sector}
+  const processed = queries.map(q => q
     .replace(/{domain}/g, domain)
-    .replace(/{sector}/g, sector)
+    .replace(/{sector}/g, sector) // on garde le secteur original pour le contexte
   );
+
+  // Limiter à 3 requêtes maximum pour réduire le temps d'analyse
+  return processed.slice(0, 3);
 }

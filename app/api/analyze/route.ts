@@ -39,34 +39,41 @@ export async function POST(request: Request) {
 
     // 2. Générer les requêtes
     const queries = generateQueries(sector, domain)
-    console.log('📋 [API] Requêtes générées:', queries)
+    console.log('📋 [API] Requêtes générées (limitées à 3):', queries)
 
     const rawResults: any = {}
     const mentions: any = {}
 
-    // 3. Appels LLM
+    // 3. Appels LLM parallélisés
+    const tasks: Promise<void>[] = [];
+
     for (const provider of providers) {
-      console.log(`🤖 [API] Appel à ${provider}...`)
-      rawResults[provider] = {}
-      mentions[provider] = {}
+      rawResults[provider] = {};
+      mentions[provider] = {};
       
       for (const query of queries) {
-        console.log(`   📝 Requête "${query}" vers ${provider}`)
-        const start = Date.now()
-        
-        const response = await queryLLM(provider as 'gemini' | 'mistral', query)
-        const duration = Date.now() - start
-        console.log(`   ✅ Réponse reçue de ${provider} en ${duration}ms`)
-        
-        rawResults[provider][query] = response
-        
-        // Extraction des mentions
-        console.log(`   🔎 Extraction des mentions pour ${provider}...`)
-        const extracted = await extractMentionsFromText(response, domain)
-        mentions[provider][query] = extracted
-        console.log(`   ✅ Mentions extraites:`, extracted)
+        tasks.push(
+          (async () => {
+            console.log(`   📝 Requête "${query}" vers ${provider}`);
+            const start = Date.now();
+            
+            const response = await queryLLM(provider as 'gemini' | 'mistral', query);
+            const duration = Date.now() - start;
+            console.log(`   ✅ Réponse reçue de ${provider} en ${duration}ms`);
+            
+            rawResults[provider][query] = response;
+            
+            // Extraction des mentions (en parallèle aussi)
+            const extracted = await extractMentionsFromText(response, domain);
+            mentions[provider][query] = extracted;
+            console.log(`   ✅ Mentions extraites pour ${provider} sur "${query}"`);
+          })()
+        );
       }
     }
+
+    // Attendre que tous les appels soient terminés
+    await Promise.all(tasks);
 
     // 4. Concurrents
     console.log('🏆 [API] Identification des concurrents...')
@@ -85,16 +92,16 @@ export async function POST(request: Request) {
     // 7. Sauvegarde
     console.log('💾 [API] Sauvegarde en base...')
     const search = await prisma.search.create({
-  data: {
-    domain,
-    sector,
-    rawResults,
-    mentions: mentions as any,
-    competitors: competitors as any,
-    recommendations: recommendations as any,
-    visibilityScore,
-  },
-})
+      data: {
+        domain,
+        sector,
+        rawResults,
+        mentions,
+        competitors,
+        recommendations,
+        visibilityScore,
+      },
+    })
     console.log('✅ [API] Analyse terminée, ID:', search.id)
 
     return NextResponse.json({ id: search.id })
